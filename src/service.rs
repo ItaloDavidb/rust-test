@@ -17,16 +17,22 @@ pub fn handle_post_request(request: &str) -> (String, String) {
         Client::connect(DB_URL, NoTls),
     ) {
         (Ok(user), Ok(mut client)) => {
-            handle_requisition(&user);
-            client
-                .execute(
-                    "INSERT INTO users (name, email, cpf) VALUES ($1, $2 ,$3)",
-                    &[&user.name, &user.email, &user.cpf],
-                )
-                .unwrap();
-
-            println!("User created successfully");
-            (OK_RESPONSE.to_string(), "User created".to_string())
+            match handle_requisition(&user) {
+                Ok(_) => {
+                    client
+                        .execute(
+                            "INSERT INTO users (name, email, cpf) VALUES ($1, $2 ,$3)",
+                            &[&user.name, &user.email, &user.cpf],
+                        )
+                        .unwrap();
+                    println!("User created successfully");
+                    (OK_RESPONSE.to_string(), "User created".to_string())
+                }
+                Err(err) => {
+                    println!("Error handling user requisition: {}", err);
+                    (BAD_REQUEST.to_string(), err)
+                }
+            }
         }
         _ => {
             println!("Error handling POST request");
